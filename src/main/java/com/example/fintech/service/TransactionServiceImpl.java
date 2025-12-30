@@ -10,9 +10,12 @@ package com.example.fintech.service;
 
 import com.example.fintech.domain.Money;
 import com.example.fintech.domain.Transaction;
+import com.example.fintech.exception.ConcurrencyFailureException;
 import com.example.fintech.exception.IdempotencyViolationException;
 import com.example.fintech.repository.TransactionRepository;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.math.BigDecimal;
 
@@ -31,17 +34,23 @@ public class TransactionServiceImpl implements TransactionService {
             BigDecimal amount,
             String currency
     ) {
-        repository.findByIdempotencyKey(idempotencyKey)
-                .ifPresent(tx -> {
-                    throw new IdempotencyViolationException(
-                            "Duplicate transaction request"
-                    );
-                });
+        try {
+            repository.findByIdempotencyKey(idempotencyKey)
+                    .ifPresent(tx -> {
+                        throw new IdempotencyViolationException(
+                                "Duplicate transaction request"
+                        );
+                    });
 
-    Money money = new Money(amount, currency);
-    Transaction transaction = new Transaction(idempotencyKey, money);
+            Money money = new Money(amount, currency);
+            Transaction transaction = new Transaction(idempotencyKey, money);
 
-    return repository.save(transaction);
+            return repository.save(transaction);
+        } catch (ObjectOptimisticLockingFailureException | OptimisticLockException ex) {
+            throw new ConcurrencyFailureException(
+                    "Transaction was modified concurrently. Please retry."
+            );
+        }
     }
 }
 
