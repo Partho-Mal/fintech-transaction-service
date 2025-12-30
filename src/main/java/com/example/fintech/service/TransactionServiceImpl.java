@@ -15,6 +15,7 @@ import com.example.fintech.exception.IdempotencyViolationException;
 import com.example.fintech.repository.TransactionRepository;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.math.BigDecimal;
@@ -22,9 +23,11 @@ import java.math.BigDecimal;
 public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository repository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public TransactionServiceImpl(TransactionRepository repository) {
+    public TransactionServiceImpl(TransactionRepository repository, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -45,7 +48,11 @@ public class TransactionServiceImpl implements TransactionService {
             Money money = new Money(amount, currency);
             Transaction transaction = new Transaction(idempotencyKey, money);
 
-            return repository.save(transaction);
+            Transaction saved = repository.save(transaction);
+            eventPublisher.publishEvent(saved);
+
+            return saved;
+
         } catch (ObjectOptimisticLockingFailureException | OptimisticLockException ex) {
             throw new ConcurrencyFailureException(
                     "Transaction was modified concurrently. Please retry."
