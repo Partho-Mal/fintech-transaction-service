@@ -25,4 +25,18 @@ public class GlobalExceptionHandler {
                         "message", ex.getMessage()
                 ));
     }
+
+    @ExceptionHandler(ConcurrencyFailureException.class)
+    public ResponseEntity<Map<String, Object>> handleConcurrencyFailure(
+            ConcurrencyFailureException ex
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "timestamp", Instant.now(),
+                        "error", "CONCURRENT_MODIFICATION",
+                        "message", ex.getMessage()
+                ));
+    }
+
 }
