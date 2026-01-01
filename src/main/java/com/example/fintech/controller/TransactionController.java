@@ -28,6 +28,16 @@ public class TransactionController {
     public Map<String, Object> createTransaction(
             @RequestBody Map<String, String> request
     ) {
+        
+        String rateLimitKey = "tx:" + request.get("idempotencyKey");
+
+        if (!rateLimiter.isAllowed(rateLimitKey)) {
+            throw new ResponseStatusException(
+              HttpStatus.TOO_MANY_REQUESTS,
+                    "Too many requests"
+            );
+        }
+        
         Transaction transaction = transactionService.createTransaction(
           request.get("idempotencyKey"),
           new BigDecimal(request.get("amount")),
