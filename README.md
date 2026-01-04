@@ -157,7 +157,7 @@ Upcoming stages:
 
 ## Tech Stack
 
-* Java 17
+* Java 21
 * Spring Boot
 * PostgreSQL
 * Kafka
