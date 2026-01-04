@@ -2,7 +2,7 @@
 
 A production-style Spring Boot backend implementing **money-safe transaction processing** with idempotency, concurrency safety, event-driven workflows, security, and resilience against downstream failures.
 
-This project is built incrementally to mirror how real fintech backends are designed, hardened, secured, and operated in production.
+This project is built incrementally to mirror how real fintech backends are designed, hardened, secured, and operated in production environments.
 
 ---
 
@@ -99,6 +99,19 @@ Service is observable and secured for internal usage.
 
 ---
 
+## Day 6 – Containerization & System Design Documentation
+
+### Implemented
+
+* Dockerized application setup for reproducible local and server deployments
+* Docker Compose configuration for running the full stack locally
+* System design documentation covering architecture, request flow, failure handling, and scaling strategy
+
+**Guarantee:**
+System behavior is reproducible, documented, and explainable end-to-end.
+
+---
+
 ## API
 
 ### Create Transaction
@@ -139,19 +152,14 @@ Service is observable and secured for internal usage.
 
 ## Current Status
 
-Implemented up to **Day 5**:
+Implemented up to **Day 6**:
 
 * Core domain correctness
 * Concurrency safety
 * Event-driven async workflows
 * Resilience against abuse and downstream failures
 * JWT security and structured observability
-
-Upcoming stages:
-
-* Deployment on AWS
-* Metrics and monitoring
-* System design documentation
+* Containerized setup and system design documentation
 
 ---
 
@@ -162,7 +170,7 @@ Upcoming stages:
 * PostgreSQL
 * Kafka
 * Redis
-* Docker (upcoming)
+* Docker
 
 ---
 
