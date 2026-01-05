@@ -2,7 +2,7 @@
 
 > **A production-grade Spring Boot backend focused on money safety, concurrency correctness, and failure-resilient asynchronous workflows.**
 
-![Java](https://img.shields.io/badge/Java-21-orange) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-green) ![Postgres](https://img.shields.io/badge/PostgreSQL-16-blue) ![Kafka](https://img.shields.io/badge/Kafka-3.7-black) ![Redis](https://img.shields.io/badge/Redis-7-red) ![Docker](https://img.shields.io/badge/Docker-Compose-blue)
+![Java](https://img.shields.io/badge/Java-21-orange) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-green) ![Postgres](https://img.shields.io/badge/PostgreSQL-16-blue) ![Redpanda](https://img.shields.io/badge/Redpanda-v23-red) ![Redis](https://img.shields.io/badge/Redis-7-red) ![Docker](https://img.shields.io/badge/Docker-Compose-blue)
 
 This project demonstrates how real-world financial systems are designed, hardened, and operated. It moves beyond basic CRUD to address the core challenges of fintech: **idempotency**, **distributed locking**, **eventual consistency**, and **resilience**.
 
@@ -24,8 +24,8 @@ flowchart LR
     DB
     end
     
-    Service -->|After Commit| Kafka[("Kafka")]
-    Kafka --> Consumer["Async Consumer"]
+    Service -->|After Commit| Redpanda[("Redpanda (Kafka)")]
+    Redpanda --> Consumer["Async Consumer"]
     Consumer -->|Score| Risk["Risk Engine (Python)"]
     Consumer -->|Retry/Fail| DLQ[("Dead Letter Queue")]
 ```
@@ -64,7 +64,7 @@ This project was built incrementally to simulate the evolution of a production s
 | :--- | :--- | :--- |
 | **Day 1** | **Domain Correctness** | Implemented immutable Idempotency Keys and constraints. Established the "Database-First" money handling strategy. |
 | **Day 2** | **Concurrency** | Added **Optimistic Locking**. The system now rejects conflicting writes deterministically rather than overwriting data silently. |
-| **Day 3** | **Event-Driven** | Decoupled workflows using **Kafka**. Implemented the "Transactional Outbox" pattern logic (publish only after commit) and DLQs. |
+| **Day 3** | **Event-Driven** | Decoupled workflows using **Redpanda (Kafka API)**. Implemented the "Transactional Outbox" pattern logic (publish only after commit) and DLQs. |
 | **Day 4** | **Resilience** | Integrated **Redis** for Rate Limiting. Added circuit-breaking logic and timeouts for the external Python Risk Service. |
 | **Day 5** | **Security** | Implemented **JWT Authentication** and Role-Based Access Control (RBAC) via Spring Security filters. |
 | **Day 6** | **Ops & Design** | Full **Dockerization**. Wrote comprehensive System Design documentation (Capacity estimation, Failure scenarios). |
@@ -101,7 +101,7 @@ This project was built incrementally to simulate the evolution of a production s
 
 * **Core:** Java 21, Spring Boot 3.2
 * **Data:** PostgreSQL (Primary), Redis (Cache/Rate Limiting)
-* **Messaging:** Apache Kafka
+* **Messaging:** Redpanda (Drop-in Kafka replacement, no Zookeeper required)
 * **Security:** Spring Security, JWT
 * **Ops:** Docker, Docker Compose
 * **Observability:** Structured JSON Logging (Logback)
@@ -110,7 +110,7 @@ This project was built incrementally to simulate the evolution of a production s
 
 ## 🏃‍♂️ How to Run
 
-The entire stack (DB, Kafka, Zookeeper, Redis, API, Risk Service) is containerized.
+The entire stack (DB, Redpanda, Redis, API, Risk Service) is containerized and runs without Zookeeper.
 
 1.  **Clone the repository:**
     ```bash
