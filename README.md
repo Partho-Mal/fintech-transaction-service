@@ -114,7 +114,7 @@ The entire stack (DB, Kafka, Zookeeper, Redis, API, Risk Service) is containeriz
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/yourusername/fintech-transaction-service.git](https://github.com/yourusername/fintech-transaction-service.git)
+    git clone [[https://github.com/yourusername/fintech-transaction-service.git](https://github.com/yourusername/fintech-transaction-service.git)](https://github.com/Partho-Mal/fintech-transaction-service)
     ```
 
 2.  **Start the infrastructure:**
