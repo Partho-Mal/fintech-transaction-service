@@ -1,176 +1,129 @@
 # Fintech Transaction Service
 
-A production-style Spring Boot backend implementing **money-safe transaction processing** with idempotency, concurrency safety, event-driven workflows, security, and resilience against downstream failures.
+> **A production-grade Spring Boot backend focused on money safety, concurrency correctness, and failure-resilient asynchronous workflows.**
 
-This project is built incrementally to mirror how real fintech backends are designed, hardened, secured, and operated in production environments.
+![Java](https://img.shields.io/badge/Java-21-orange) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-green) ![Postgres](https://img.shields.io/badge/PostgreSQL-16-blue) ![Kafka](https://img.shields.io/badge/Kafka-3.7-black) ![Redis](https://img.shields.io/badge/Redis-7-red) ![Docker](https://img.shields.io/badge/Docker-Compose-blue)
 
----
-
-## Architecture Overview
-
-* Layered architecture with strict separation of concerns
-* Database is the source of truth for all money-related operations
-* Idempotency and optimistic locking ensure correctness under concurrency
-* Asynchronous workflows are handled via Kafka with retry and Dead Letter Queue (DLQ)
-* External dependencies are integrated with timeouts and fallbacks to prevent cascading failures
-* Security and observability are treated as first-class concerns
+This project demonstrates how real-world financial systems are designed, hardened, and operated. It moves beyond basic CRUD to address the core challenges of fintech: **idempotency**, **distributed locking**, **eventual consistency**, and **resilience**.
 
 ---
 
-## Day 1 – Core Domain Correctness
+## 🏗 Architecture
 
-### Implemented
+The system follows a strict layered architecture with event-driven workflows for non-critical paths.
 
-* Transaction domain model with immutable idempotency key
-* Money value object (amount + currency)
-* Idempotent transaction creation enforced at service layer
-* Database-backed uniqueness constraint for idempotency
-* Clean controller → service → repository separation
-* Global exception handling with deterministic API responses
-
-### Explicitly Not Implemented
-
-* Kafka or async processing
-* Redis or caching
-* Filters or interceptors
-* DTOs and validation annotations
-
-**Goal:** Money-safe transaction creation with deterministic behavior.
-
----
-
-## Day 2 – Concurrency & Failure Safety
-
-### Implemented
-
-* Optimistic locking using `@Version`
-* Safe handling of concurrent updates
-* Deterministic failure on write conflicts
-* Clean mapping of concurrency failures to API responses
-
-**Guarantee:**
-No double processing. No silent overwrites. Ever.
+```mermaid
+flowchart LR
+    Client -->|HTTP POST| API[API Gateway / Service]
+    API -->|Rate Limit| Redis[(Redis)]
+    API --> Service[Transaction Service]
+    Service -->|ACID Tx| DB[(PostgreSQL)]
+    
+    subgraph "Critical Path"
+    Service
+    DB
+    end
+    
+    Service -->|After Commit| Kafka[(Kafka)]
+    Kafka --> Consumer[Async Consumer]
+    Consumer -->|Score| Risk[Risk Engine (Python)]
+    Consumer -->|Retry/Fail| DLQ[(Dead Letter Queue)]
+```
 
 ---
 
-## Day 3 – Event-Driven Architecture with Kafka + DLQ
+## 🛡️ Core System Guarantees
 
-### Implemented
+This service is built to strictly enforce the following invariants:
 
-* Event-driven transaction workflow using Kafka
-* Events published **only after database commit**
-* Kafka consumer with failure isolation
-* Retry-safe processing with Dead Letter Queue (DLQ)
-* At-least-once delivery handled safely via idempotency
-
-**Guarantee:**
-Asynchronous processing without message loss or money inconsistency.
+1.  **Money Safety:** Database is the single source of truth. Arithmetic is handled via explicit Money Value Objects.
+2.  **No Double Spending:** Strict **idempotency** ensures that retrying the same request (due to network timeout) never results in a duplicate transaction.
+3.  **Concurrency Control:** **Optimistic locking** (`@Version`) prevents silent overwrites when multiple threads access the same account simultaneously.
+4.  **Fault Tolerance:** Downstream failures (Risk Service) utilize **timeouts and fallbacks** to prevent cascading system failures.
+5.  **Auditability:** Every state change is logged structurally; asynchronous messages are tracked via correlation IDs.
 
 ---
 
-## Day 4 – Redis, Risk Service & Resilience
+## 🚀 Engineering Journey (Implementation Phases)
 
-### Implemented
+This project was built incrementally to simulate the evolution of a production system.
 
-* Redis-backed rate limiting to protect APIs from abuse
-* External risk scoring service integration (Python-based)
-* Mandatory timeouts for all external calls
-* Explicit fallback behavior on downstream failure
-* Risk evaluation performed asynchronously (non-blocking)
-
-**Guarantee:**
-Downstream failures do not block transaction processing.
-
----
-
-## Day 5 – Security & Observability
-
-### Implemented
-
-* JWT-based authentication
-* Role-based access control (USER, ADMIN)
-* Authentication enforced via security filter chain
-* No authentication logic inside controllers or services
-* Structured JSON logging using Logback
-* Production-readable logs suitable for aggregation and tracing
-
-**Guarantee:**
-Service is observable and secured for internal usage.
+| Phase | Focus Area | Engineering Solution |
+| :--- | :--- | :--- |
+| **Day 1** | **Domain Correctness** | Implemented immutable Idempotency Keys and constraints. Established the "Database-First" money handling strategy. |
+| **Day 2** | **Concurrency** | Added **Optimistic Locking**. The system now rejects conflicting writes deterministically rather than overwriting data silently. |
+| **Day 3** | **Event-Driven** | Decoupled workflows using **Kafka**. Implemented the "Transactional Outbox" pattern logic (publish only after commit) and DLQs. |
+| **Day 4** | **Resilience** | Integrated **Redis** for Rate Limiting. Added circuit-breaking logic and timeouts for the external Python Risk Service. |
+| **Day 5** | **Security** | Implemented **JWT Authentication** and Role-Based Access Control (RBAC) via Spring Security filters. |
+| **Day 6** | **Ops & Design** | Full **Dockerization**. wrote comprehensive System Design documentation (Capacity estimation, Failure scenarios). |
 
 ---
 
-## Day 6 – Containerization & System Design Documentation
-
-### Implemented
-
-* Dockerized application setup for reproducible local and server deployments
-* Docker Compose configuration for running the full stack locally
-* System design documentation covering architecture, request flow, failure handling, and scaling strategy
-
-**Guarantee:**
-System behavior is reproducible, documented, and explainable end-to-end.
-
----
-
-## API
+## 🔌 API Reference
 
 ### Create Transaction
-
 `POST /api/v1/transactions`
 
-#### Request
-
+**Request:**
 ```json
 {
-  "idempotencyKey": "abc-123",
-  "amount": "100.00",
-  "currency": "INR"
+  "idempotencyKey": "unique-uuid-v4-abc-123",
+  "amount": "1500.50",
+  "currency": "INR",
+  "description": "Payment for services"
 }
 ```
 
-#### Response
-
+**Response:**
 ```json
 {
-  "transactionId": "uuid",
-  "status": "CREATED"
+  "transactionId": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "CREATED",
+  "timestamp": "2024-01-01T12:00:00Z"
 }
 ```
 
 ---
 
-## Engineering Principles Followed
+## 🛠️ Tech Stack
 
-* Database-first correctness for financial data
-* Explicit handling of concurrency and idempotency
-* Event-driven design with clear failure boundaries
-* Fail-fast behavior over hidden retries
-* Security and observability built into the core system
-* Incremental hardening instead of premature optimization
-
----
-
-## Current Status
-
-Implemented up to **Day 6**:
-
-* Core domain correctness
-* Concurrency safety
-* Event-driven async workflows
-* Resilience against abuse and downstream failures
-* JWT security and structured observability
-* Containerized setup and system design documentation
+* **Core:** Java 21, Spring Boot 3.2
+* **Data:** PostgreSQL (Primary), Redis (Cache/Rate Limiting)
+* **Messaging:** Apache Kafka
+* **Security:** Spring Security, JWT
+* **Ops:** Docker, Docker Compose
+* **Observability:** Structured JSON Logging (Logback)
 
 ---
 
-## Tech Stack
+## 🏃‍♂️ How to Run
 
-* Java 21
-* Spring Boot
-* PostgreSQL
-* Kafka
-* Redis
-* Docker
+The entire stack (DB, Kafka, Zookeeper, Redis, API, Risk Service) is containerized.
+
+1.  **Clone the repository:**
+    ```bash
+    git clone [https://github.com/yourusername/fintech-transaction-service.git](https://github.com/yourusername/fintech-transaction-service.git)
+    ```
+
+2.  **Start the infrastructure:**
+    ```bash
+    docker-compose up -d --build
+    ```
+
+3.  **Access the Service:**
+    * API: `http://localhost:8080`
+    * Database (Port): `5432`
+
+---
+
+## 📚 System Design Documentation
+
+Detailed design decisions are documented in the `/docs` folder. These are written to be **System Design Interview Ready**:
+
+* [Architecture & Request Flow](./docs/architecture.md)
+* [Concurrency & Locking Strategy](./docs/concurrency.md)
+* [Failure Scenarios & Recovery](./docs/failures.md)
+* [Scaling Strategy](./docs/scaling.md)
 
 ---
 

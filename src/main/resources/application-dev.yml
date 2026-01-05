@@ -1,9 +1,50 @@
+# src/main/resources/application-dev.yml
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/fintech
-    username: fintech
-    password: fintech
+  config:
+    activate:
+      on-profile: dev
 
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:fintech}
+    username: ${DB_USER:fintech}
+    password: ${DB_PASSWORD:fintech_dev}
+    # TUNING: Optimized for k6 Stress Testing
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # --- ADD THIS SECTION ---
+  jpa:
+    hibernate:
+      ddl-auto: update # <--- THIS CREATES THE MISSING TABLE
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  # ------------------------
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:redpanda:9092}
+    consumer:
+      group-id: transaction-group
+      auto-offset-reset: earliest
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:defaultSecretKeyMustBeVeryLongToPreventWeakKeyException1234567890}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+# TUNING: WARN level required to reduce CPU usage during Stress Test
 logging:
   level:
-    root: INFO
+    root: WARN
+    com.example.fintech: WARN
+    org.springframework: WARN
+    org.hibernate: WARN

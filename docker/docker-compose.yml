@@ -1,0 +1,96 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_NAME:-fintech}
+      POSTGRES_USER: ${DB_USER:-fintech}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fintech_dev}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fintech-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-fintech} -d ${DB_NAME:-fintech}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    # "redis" host resolves to this container
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - fintech-net
+
+  redpanda:
+    image: redpandadata/redpanda:v23.3.9
+    # "redpanda" host resolves to this container
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --node-id
+      - "0"
+      - --check=false
+    ports:
+      - "9092:9092"
+    networks:
+      - fintech-net
+
+  risk-service:
+    image: tiangolo/uvicorn-gunicorn-fastapi:python3.11
+    volumes:
+      - ../risk-service:/app
+    networks:
+      - fintech-net
+
+  fintech-app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env.dev
+    environment:
+      # --- CLEAN CONFIGURATION ---
+      # We pass standard variables. application.yml maps these to Spring properties.
+
+      # 1. Infrastructure Hostnames
+      # These match the service names defined above
+      REDIS_HOST: redis
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      DB_HOST: postgres
+      DB_PORT: 5432
+
+      # 2. Database Credentials (Fallbacks provided in case .env is missing)
+      DB_NAME: ${DB_NAME:-fintech}
+      DB_USER: ${DB_USER:-fintech}
+      DB_PASSWORD: ${DB_PASSWORD:-fintech_dev}
+
+      # 3. Security
+      JWT_SECRET: ${JWT_SECRET:-EssSyoC3TaySaIIMxFk41mowdYyvzm+OGbFGFg0aqjR3bk9CheJQQrNJwBud+MZr}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      redpanda:
+        condition: service_started
+    networks:
+      - fintech-net
+
+volumes:
+  postgres_data:
+
+networks:
+  fintech-net:
+    driver: bridge

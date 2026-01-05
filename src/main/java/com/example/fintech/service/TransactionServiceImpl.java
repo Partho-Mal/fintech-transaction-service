@@ -1,11 +1,3 @@
-//TransactionServiceImpl
-//implements TransactionService
-//has TransactionRepository
-//@Transactional createTransaction
-//check idempotency
-//create Money
-//create Transaction
-//save and return
 package com.example.fintech.service;
 
 import com.example.fintech.domain.Money;
@@ -14,12 +6,14 @@ import com.example.fintech.exception.ConcurrencyFailureException;
 import com.example.fintech.exception.IdempotencyViolationException;
 import com.example.fintech.repository.TransactionRepository;
 import jakarta.persistence.OptimisticLockException;
-import jakarta.transaction.Transactional;
+import org.springframework.stereotype.Service; // <--- 1. Add this import
+import org.springframework.transaction.annotation.Transactional; // Use Spring's Transactional for better support
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.math.BigDecimal;
 
+@Service // <--- 2. Add this annotation here
 public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository repository;
@@ -38,6 +32,7 @@ public class TransactionServiceImpl implements TransactionService {
             String currency
     ) {
         try {
+            // Idempotency Check
             repository.findByIdempotencyKey(idempotencyKey)
                     .ifPresent(tx -> {
                         throw new IdempotencyViolationException(
@@ -49,7 +44,9 @@ public class TransactionServiceImpl implements TransactionService {
             Transaction transaction = new Transaction(idempotencyKey, money);
 
             Transaction saved = repository.save(transaction);
-            eventPublisher.publishEvent(saved);
+
+            // Publish event for side effects (like Risk Service analysis)
+            // eventPublisher.publishEvent(new TransactionCreatedEvent(saved));
 
             return saved;
 
@@ -60,4 +57,3 @@ public class TransactionServiceImpl implements TransactionService {
         }
     }
 }
-

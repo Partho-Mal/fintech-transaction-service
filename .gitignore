@@ -1,0 +1,35 @@
+# Build
+target/
+build/
+out/
+*.log
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker / Infra
+docker/*.env
+**/docker/*.env
+dump.rdb
+
+# Node
+node_modules/
