@@ -14,21 +14,33 @@ The system follows a strict layered architecture with event-driven workflows for
 
 ```mermaid
 flowchart LR
-    Client -->|HTTP POST| API[API Gateway / Service]
-    API -->|Rate Limit| Redis[(Redis)]
-    API --> Service[Transaction Service]
-    Service -->|ACID Tx| DB[(PostgreSQL)]
+    Client -->|HTTP POST| API["API Gateway / Service"]
+    API -->|Rate Limit| Redis[("Redis")]
+    API --> Service["Transaction Service"]
+    Service -->|ACID Tx| DB[("PostgreSQL")]
     
     subgraph "Critical Path"
     Service
     DB
     end
     
-    Service -->|After Commit| Kafka[(Kafka)]
-    Kafka --> Consumer[Async Consumer]
-    Consumer -->|Score| Risk[Risk Engine (Python)]
-    Consumer -->|Retry/Fail| DLQ[(Dead Letter Queue)]
+    Service -->|After Commit| Kafka[("Kafka")]
+    Kafka --> Consumer["Async Consumer"]
+    Consumer -->|Score| Risk["Risk Engine (Python)"]
+    Consumer -->|Retry/Fail| DLQ[("Dead Letter Queue")]
 ```
+
+---
+
+## 🚀 Performance Benchmarks
+
+To ensure the system scales under high-frequency trading (HFT) scenarios, rigorous stress testing was performed using **k6**.
+
+* ✅ **Throughput:** ~2,333 TPS (Transactions Per Second) achieved on local hardware.
+* ✅ **Latency:** p95 latency maintained **< 190ms** under extreme load (500 concurrent users).
+* ✅ **Reliability:** 100% success rate (186,000+ requests with 0 failures).
+
+[👉 Click here to see the detailed Benchmark Screenshots and Proofs](docs/screenshots/README.md)
 
 ---
 
@@ -55,7 +67,7 @@ This project was built incrementally to simulate the evolution of a production s
 | **Day 3** | **Event-Driven** | Decoupled workflows using **Kafka**. Implemented the "Transactional Outbox" pattern logic (publish only after commit) and DLQs. |
 | **Day 4** | **Resilience** | Integrated **Redis** for Rate Limiting. Added circuit-breaking logic and timeouts for the external Python Risk Service. |
 | **Day 5** | **Security** | Implemented **JWT Authentication** and Role-Based Access Control (RBAC) via Spring Security filters. |
-| **Day 6** | **Ops & Design** | Full **Dockerization**. wrote comprehensive System Design documentation (Capacity estimation, Failure scenarios). |
+| **Day 6** | **Ops & Design** | Full **Dockerization**. Wrote comprehensive System Design documentation (Capacity estimation, Failure scenarios). |
 
 ---
 
