@@ -132,10 +132,11 @@ The entire stack (DB, Kafka, Zookeeper, Redis, API, Risk Service) is containeriz
 
 Detailed design decisions are documented in the `/docs` folder. These are written to be **System Design Interview Ready**:
 
-* [Architecture & Request Flow](./docs/architecture.md)
-* [Concurrency & Locking Strategy](./docs/concurrency.md)
-* [Failure Scenarios & Recovery](./docs/failures.md)
-* [Scaling Strategy](./docs/scaling.md)
+* [High-Level Architecture](./docs/architecture.md)
+* [System Design & Concurrency Strategy](./docs/system-design.md)
+* [Request Lifecycle & Data Flow](./docs/request-flow.md)
+* [Failure Scenarios & Resilience](./docs/failure-scenarios.md)
+* [Scalability & Capacity Planning](./docs/scaling-strategy.md)
 
 ---
 
